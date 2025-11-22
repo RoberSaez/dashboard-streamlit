@@ -13,7 +13,7 @@ import os
 color_palette = px.colors.qualitative.Set3
 
 # Cargar el archivo Excel
-excel_path = os.path.join('documentos', 'FActNOTARIADOnacionalidades.xlsx')
+excel_path = os.path.join('documentos', 'FactNOTARIADOnacionalidades.xlsx')
 df = pd.read_excel(excel_path)
 
 # Sidebar: selector de municipio
