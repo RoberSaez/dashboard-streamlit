@@ -39,12 +39,56 @@ unique_nacionalidades = list(OrderedDict.fromkeys(df_filtrado['nacionalidad'].dr
 color_cycle = itertools.cycle(color_palette)
 color_map = {nac: next(color_cycle) for nac in unique_nacionalidades}
 
-# Mostrar el título with estilos personalizados
+# Mostrar el título con estilos personalizados
 st.markdown(
     '<h1 style="text-align: center; color: white;">Compraventas por Nacionalidades en <span style="color: #3741c1;">Alicante</span></h1>',
     unsafe_allow_html=True
 )
 
+# Sección de KPIs con 5 columnas
+cols = st.columns(5)
+def kpi_box(col, label, value):
+    col.markdown(f"""
+        <div style='background-color:#0e1117; border-radius:18px; padding:16px; box-shadow:0 4px 16px 0 rgba(30,33,39,0.18); text-align:center; margin-bottom:8px; border:1px solid #23272f;'>
+            <span style='font-size:15px; color:#fff;'>{label}</span><br>
+            <span style='font-size:22px; font-weight:bold; color:#fff;'>{value}</span>
+        </div>
+    """, unsafe_allow_html=True)
+
+# KPI 1: Municipio seleccionado
+kpi_box(cols[0], 'Municipio', municipio_sel)
+
+# KPI 2 y 3: Nacionalidades de residentes número 1 y 2 en el municipio
+nac_residentes = []
+if 'residentes' in df_filtrado.columns:
+    residentes_mun = df_filtrado.groupby('nacionalidad')['residentes'].sum().reset_index()
+    residentes_mun = residentes_mun.sort_values('residentes', ascending=False)
+    residentes_mun_no_otros = residentes_mun[residentes_mun['nacionalidad'] != 'Otros']
+    nac_residentes = residentes_mun_no_otros['nacionalidad'].tolist()
+if len(nac_residentes) > 0:
+    kpi_box(cols[1], 'Residentes Nº1', nac_residentes[0])
+else:
+    kpi_box(cols[1], 'Residentes Nº1', '-')
+if len(nac_residentes) > 1:
+    kpi_box(cols[2], 'Residentes Nº2', nac_residentes[1])
+else:
+    kpi_box(cols[2], 'Residentes Nº2', '-')
+
+# KPI 4 y 5: Nacionalidades de no residentes número 1 y 2 en el municipio
+nac_nores = []
+if 'no_residentes' in df_filtrado.columns:
+    nores_mun = df_filtrado.groupby('nacionalidad')['no_residentes'].sum().reset_index()
+    nores_mun = nores_mun.sort_values('no_residentes', ascending=False)
+    nores_mun_no_otros = nores_mun[nores_mun['nacionalidad'] != 'Otros']
+    nac_nores = nores_mun_no_otros['nacionalidad'].tolist()
+if len(nac_nores) > 0:
+    kpi_box(cols[3], 'No Residentes Nº1', nac_nores[0])
+else:
+    kpi_box(cols[3], 'No Residentes Nº1', '-')
+if len(nac_nores) > 1:
+    kpi_box(cols[4], 'No Residentes Nº2', nac_nores[1])
+else:
+    kpi_box(cols[4], 'No Residentes Nº2', '-')
 
 # Eliminar columnas de identificador y fecha si existen
 cols_to_hide = [c for c in df_filtrado.columns if 'id' in c.lower() or 'fecha' in c.lower()]
@@ -177,3 +221,56 @@ if 'residentes' in df_filtrado.columns:
     col2.plotly_chart(fig_res, use_container_width=True)
 else:
     col2.info('No hay datos de residentes.')
+
+## Sección de dos columnas para las tablas de nacionalidades (justo después de los KPIs)
+col_a, col_b = st.columns(2)
+
+# Tabla de nacionalidades de residentes en el municipio seleccionado
+if 'residentes' in df_filtrado.columns:
+    residentes_mun = df_filtrado.groupby('nacionalidad')['residentes'].sum().reset_index()
+    total_mun_res = residentes_mun['residentes'].sum()
+    residentes_mun['porcentaje'] = (residentes_mun['residentes'] / total_mun_res * 100).map('{:.2f}%'.format)
+    residentes_mun = residentes_mun.sort_values('residentes', ascending=False).reset_index(drop=True)
+    residentes_mun.index = residentes_mun.index + 1
+    residentes_mun_no_otros = residentes_mun[residentes_mun['nacionalidad'] != 'Otros']
+    if not residentes_mun_no_otros.empty:
+        max_row = residentes_mun_no_otros.iloc[0]
+    else:
+        max_row = residentes_mun.iloc[0]
+    col_a.markdown('<div style="padding-right:30px">', unsafe_allow_html=True)
+    col_a.write(f'Nacionalidades de residentes en {municipio_sel} (ordenadas de mayor a menor)')
+    table_html = '<table style="width:100%"><tr><th>#</th><th>Nacionalidad</th><th>Porcentaje</th></tr>'
+    for idx, row in residentes_mun.iterrows():
+        if row['nacionalidad'] == max_row['nacionalidad']:
+            table_html += f'<tr style="background-color:#2ecc71;color:#000;font-weight:bold"><td>{idx}</td><td>{row["nacionalidad"]}</td><td>{row["porcentaje"]}</td></tr>'
+        else:
+            table_html += f'<tr><td>{idx}</td><td>{row["nacionalidad"]}</td><td>{row["porcentaje"]}</td></tr>'
+    table_html += '</table>'
+    col_a.markdown(table_html, unsafe_allow_html=True)
+    col_a.markdown('</div>', unsafe_allow_html=True)
+
+# Tabla de nacionalidades de no residentes en el municipio seleccionado
+if 'no_residentes' in df_filtrado.columns:
+    nores_mun = df_filtrado.groupby('nacionalidad')['no_residentes'].sum().reset_index()
+    total_mun_nores = nores_mun['no_residentes'].sum()
+    nores_mun['porcentaje'] = (nores_mun['no_residentes'] / total_mun_nores * 100).map('{:.2f}%'.format)
+    nores_mun = nores_mun.sort_values('no_residentes', ascending=False).reset_index(drop=True)
+    nores_mun.index = nores_mun.index + 1
+    nores_mun_no_otros = nores_mun[nores_mun['nacionalidad'] != 'Otros']
+    if not nores_mun_no_otros.empty:
+        max_row_nores = nores_mun_no_otros.iloc[0]
+    else:
+        max_row_nores = nores_mun.iloc[0]
+    col_b.markdown('<div style="padding-left:30px">', unsafe_allow_html=True)
+    col_b.write(f'Nacionalidades de no residentes en {municipio_sel} (ordenadas de mayor a menor)')
+    table_html_nores = '<table style="width:100%"><tr><th>#</th><th>Nacionalidad</th><th>Porcentaje</th></tr>'
+    for idx, row in nores_mun.iterrows():
+        if row['nacionalidad'] == max_row_nores['nacionalidad']:
+            table_html_nores += f'<tr style="background-color:#2ecc71;color:#000;font-weight:bold"><td>{idx}</td><td>{row["nacionalidad"]}</td><td>{row["porcentaje"]}</td></tr>'
+        else:
+            table_html_nores += f'<tr><td>{idx}</td><td>{row["nacionalidad"]}</td><td>{row["porcentaje"]}</td></tr>'
+    table_html_nores += '</table>'
+    col_b.markdown(table_html_nores, unsafe_allow_html=True)
+    col_b.markdown('</div>', unsafe_allow_html=True)
+
+# Gráficos de barras y donut ya no se repiten aquí
