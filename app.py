@@ -1,6 +1,6 @@
 import streamlit as st
 st.set_page_config(
-    page_title='InmoData 360',
+    page_title='InmoData PRO',
     page_icon='documentos/Favicon BDI.png',
     layout='wide'
 )
