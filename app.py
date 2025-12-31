@@ -33,6 +33,11 @@ def require_password():
 
 require_password()
 
+with st.sidebar:
+    if st.button("Salir"):
+        st.session_state.authenticated = False
+        st.rerun()
+
 import pandas as pd
 import plotly.express as px
 import os
