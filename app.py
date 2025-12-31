@@ -4,6 +4,34 @@ st.set_page_config(
     page_icon='documentos/Favicon BDI.png',
     layout='wide'
 )
+import os
+
+def require_password():
+    correct_password = os.getenv("APP_PASSWORD", "")
+    if not correct_password:
+        st.error("Falta configurar APP_PASSWORD en el servidor.")
+        st.stop()
+
+    if "authenticated" not in st.session_state:
+        st.session_state.authenticated = False
+
+    if st.session_state.authenticated:
+        return
+
+    st.title("Acceso")
+    pwd = st.text_input("Contraseña", type="password")
+
+    if st.button("Entrar"):
+        if pwd == correct_password:
+            st.session_state.authenticated = True
+            st.rerun()
+        else:
+            st.error("Contraseña incorrecta.")
+            st.stop()
+
+    st.stop()
+
+require_password()
 
 import pandas as pd
 import plotly.express as px
